@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import '../core/theme/app_theme.dart';
 import '../models/models.dart';
 
-/// TaskForm Widget - Görev ekleme/düzenleme formu (Stateful - form state)
+/// TaskForm Widget - Görev ekleme/düzenleme formu
 class TaskForm extends StatefulWidget {
   final Task? existingTask;
   final List<Task> availablePredecessors;
@@ -57,45 +58,87 @@ class _TaskFormState extends State<TaskForm> {
     return Form(
       key: _formKey,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            _buildSectionTitle(context, 'Temel Bilgiler', Icons.info_outline),
+            const SizedBox(height: 16),
             _buildTitleField(),
             const SizedBox(height: 16),
             _buildDescriptionField(),
+            const SizedBox(height: 32),
+            
+            _buildSectionTitle(context, 'Durum ve Öncelik', Icons.flag_outlined),
             const SizedBox(height: 16),
-            _buildPrioritySelector(),
+            Row(
+              children: [
+                Expanded(child: _buildPrioritySelector(context)),
+                const SizedBox(width: 16),
+                Expanded(child: _buildStatusSelector(context)),
+              ],
+            ),
+            const SizedBox(height: 32),
+            
+            _buildSectionTitle(context, 'Zamanlama', Icons.access_time),
             const SizedBox(height: 16),
-            _buildStatusSelector(),
-            const SizedBox(height: 16),
-            _buildDatePicker(),
-            const SizedBox(height: 16),
-            _buildHoursField(),
+            Row(
+              children: [
+                Expanded(child: _buildDatePicker(context)),
+                const SizedBox(width: 16),
+                Expanded(child: _buildHoursField()),
+              ],
+            ),
+            const SizedBox(height: 32),
+            
+            _buildSectionTitle(context, 'Bağımlılıklar', Icons.link),
             const SizedBox(height: 16),
             _buildDependencySelector(),
-            const SizedBox(height: 24),
-            _buildSaveButton(),
+            
+            const SizedBox(height: 48),
+            _buildSaveButton(context),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildSectionTitle(BuildContext context, String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Theme.of(context).primaryColor),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: TextStyle(
+            color: Theme.of(context).primaryColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            letterSpacing: 1,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Divider(
+            color: Theme.of(context).primaryColor.withOpacity(0.2),
+            thickness: 1,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTitleField() {
     return TextFormField(
       controller: _titleController,
+      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
       decoration: const InputDecoration(
-        labelText: 'Görev Başlığı *',
-        border: OutlineInputBorder(),
+        labelText: 'Görev Başlığı',
         prefixIcon: Icon(Icons.title),
+        hintText: 'Örn: Ana Sayfa Tasarımı',
       ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Başlık zorunludur';
-        }
-        return null;
-      },
+      validator: (value) =>
+          (value == null || value.isEmpty) ? 'Başlık zorunludur' : null,
     );
   }
 
@@ -104,53 +147,73 @@ class _TaskFormState extends State<TaskForm> {
       controller: _descriptionController,
       decoration: const InputDecoration(
         labelText: 'Açıklama',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.description),
+        prefixIcon: Icon(Icons.description_outlined),
+        hintText: 'Görev detaylarını buraya girin...',
+        alignLabelWithHint: true,
       ),
-      maxLines: 3,
+      maxLines: 4,
     );
   }
 
-  Widget _buildPrioritySelector() {
+  Widget _buildPrioritySelector(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Öncelik', style: TextStyle(fontWeight: FontWeight.w500)),
+        const Text('Öncelik', style: TextStyle(color: Colors.grey, fontSize: 12)),
         const SizedBox(height: 8),
-        SegmentedButton<Priority>(
-          segments: Priority.values
-              .map((p) => ButtonSegment(value: p, label: Text(p.label)))
-              .toList(),
-          selected: {_priority},
-          onSelectionChanged: (selected) {
-            setState(() => _priority = selected.first);
-          },
+        DropdownButtonFormField<Priority>(
+          value: _priority,
+          decoration: const InputDecoration(
+            prefixIcon: Icon(Icons.priority_high),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          ),
+          items: Priority.values.map((p) {
+            Color color;
+            switch (p) {
+              case Priority.high: color = AppTheme.priorityHigh; break;
+              case Priority.medium: color = AppTheme.priorityMedium; break;
+              case Priority.low: color = AppTheme.priorityLow; break;
+            }
+            return DropdownMenuItem(
+              value: p,
+              child: Text(
+                p.label,
+                style: TextStyle(color: color, fontWeight: FontWeight.bold),
+              ),
+            );
+          }).toList(),
+          onChanged: (val) => setState(() => _priority = val!),
         ),
       ],
     );
   }
 
-  Widget _buildStatusSelector() {
+  Widget _buildStatusSelector(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Durum', style: TextStyle(fontWeight: FontWeight.w500)),
+        const Text('Durum', style: TextStyle(color: Colors.grey, fontSize: 12)),
         const SizedBox(height: 8),
-        SegmentedButton<TaskStatus>(
-          segments: TaskStatus.values
-              .map((s) => ButtonSegment(value: s, label: Text(s.label)))
-              .toList(),
-          selected: {_status},
-          onSelectionChanged: (selected) {
-            setState(() => _status = selected.first);
-          },
+        DropdownButtonFormField<TaskStatus>(
+          value: _status,
+          decoration: const InputDecoration(
+            prefixIcon: Icon(Icons.timelapse),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          ),
+          items: TaskStatus.values.map((s) {
+            return DropdownMenuItem(
+              value: s,
+              child: Text(s.label),
+            );
+          }).toList(),
+          onChanged: (val) => setState(() => _status = val!),
         ),
       ],
     );
   }
 
-  Widget _buildDatePicker() {
-    final dateFormat = DateFormat('dd MMMM yyyy', 'tr_TR');
+  Widget _buildDatePicker(BuildContext context) {
+    final dateFormat = DateFormat('dd MMM yyyy', 'tr_TR');
     
     return InkWell(
       onTap: () async {
@@ -159,18 +222,33 @@ class _TaskFormState extends State<TaskForm> {
           initialDate: _dueDate,
           firstDate: DateTime.now(),
           lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: const ColorScheme.dark(
+                  primary: Color(0xFFFF6D00),
+                  onPrimary: Colors.white,
+                  surface: Color(0xFF1E1E1E),
+                  onSurface: Colors.white,
+                ),
+              ),
+              child: child!,
+            );
+          },
         );
         if (picked != null) {
           setState(() => _dueDate = picked);
         }
       },
-      child: InputDecorator(
-        decoration: const InputDecoration(
-          labelText: 'Son Teslim Tarihi',
-          border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.calendar_today),
+      child: IgnorePointer(
+        child: TextFormField(
+          key: ValueKey(_dueDate), // Force rebuild on change
+          initialValue: dateFormat.format(_dueDate),
+          decoration: const InputDecoration(
+            labelText: 'Son Tarih',
+            prefixIcon: Icon(Icons.calendar_today),
+          ),
         ),
-        child: Text(dateFormat.format(_dueDate)),
       ),
     );
   }
@@ -179,16 +257,15 @@ class _TaskFormState extends State<TaskForm> {
     return TextFormField(
       controller: _hoursController,
       decoration: const InputDecoration(
-        labelText: 'Tahmini Süre (saat)',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.timer),
+        labelText: 'Süre (Saat)',
+        prefixIcon: Icon(Icons.timer_outlined),
       ),
       keyboardType: TextInputType.number,
       validator: (value) {
         if (value != null && value.isNotEmpty) {
           final hours = int.tryParse(value);
           if (hours == null || hours < 1) {
-            return 'Geçerli bir süre girin';
+            return 'Geçersiz';
           }
         }
         return null;
@@ -200,33 +277,41 @@ class _TaskFormState extends State<TaskForm> {
     return DropdownButtonFormField<String?>(
       value: _predecessorId,
       decoration: const InputDecoration(
-        labelText: 'Öncül Görev (Bağımlılık)',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.link),
+        labelText: 'Öncül Görev (Bu görev başlamadan bitmesi gereken)',
+        prefixIcon: Icon(Icons.lock_outline),
+        helperText: 'Seçilen görev tamamlanana kadar bu görev başlayamaz.',
       ),
       items: [
-        const DropdownMenuItem(value: null, child: Text('Yok')),
+        const DropdownMenuItem(value: null, child: Text('Bağımlılık Yok')),
         ...widget.availablePredecessors
             .where((t) => t.id != widget.existingTask?.id)
             .map((t) => DropdownMenuItem(
                   value: t.id,
-                  child: Text(t.title),
+                  child: Text(
+                    t.title,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 )),
       ],
-      onChanged: (value) {
-        setState(() => _predecessorId = value);
-      },
+      onChanged: (value) => setState(() => _predecessorId = value),
+      isExpanded: true,
     );
   }
 
-  Widget _buildSaveButton() {
-    return ElevatedButton.icon(
-      onPressed: _saveTask,
-      icon: const Icon(Icons.save),
-      label: Text(widget.existingTask != null ? 'Güncelle' : 'Kaydet'),
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+  Widget _buildSaveButton(BuildContext context) {
+    return SizedBox(
+      height: 56,
+      child: ElevatedButton.icon(
+        onPressed: _saveTask,
+        icon: Icon(widget.existingTask != null ? Icons.update : Icons.add_task),
+        label: Text(
+          widget.existingTask != null ? 'GÖREVİ GÜNCELLE' : 'YENİ GÖREV OLUŞTUR',
+          style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+        ),
+        style: ElevatedButton.styleFrom(
+          elevation: 8,
+          shadowColor: Theme.of(context).primaryColor.withOpacity(0.5),
+        ),
       ),
     );
   }

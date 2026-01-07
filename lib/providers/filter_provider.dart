@@ -16,6 +16,12 @@ class FilterProvider extends ChangeNotifier {
   SortOption get sortOption => _sortOption;
   bool get sortAscending => _sortAscending;
 
+  // Aktif filtre kontrolü
+  bool get hasActiveFilters => 
+      _selectedPriority != null || 
+      _selectedStatus != null || 
+      _searchQuery.isNotEmpty;
+
   /// Öncelik filtresi ayarla
   void setSelectedPriority(Priority? priority) {
     _selectedPriority = priority;

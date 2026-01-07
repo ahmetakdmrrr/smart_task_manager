@@ -45,7 +45,10 @@ class SmartTaskManagerApp extends StatelessWidget {
       child: MaterialApp.router(
         title: 'Smart Task Manager',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
+        theme: AppTheme.darkTheme,
+        // Dark theme'i default yap
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.dark,
         routerConfig: appRouter,
       ),
     );

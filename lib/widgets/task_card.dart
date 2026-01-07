@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../core/theme/app_theme.dart';
 import '../models/models.dart';
 
 /// TaskCard Widget - Görev kartı (Stateless - veri sadece gösterim)
@@ -20,30 +21,42 @@ class TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      // AppTheme'den gelen cardTheme zaten margin ve shape'i hallediyor
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).cardTheme.color!,
+                Theme.of(context).cardTheme.color!.withOpacity(0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(),
-              const SizedBox(height: 8),
+              _buildHeader(context),
+              const SizedBox(height: 12),
               if (task.description.isNotEmpty) ...[
                 Text(
                   task.description,
-                  style: TextStyle(color: Colors.grey[600]),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[400],
+                        height: 1.5,
+                      ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
               ],
-              _buildFooter(),
-              if (showDependencyWarning) _buildDependencyWarning(),
+              _buildFooter(context),
+              if (showDependencyWarning) _buildDependencyWarning(context),
             ],
           ),
         ),
@@ -51,152 +64,196 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Text(
             task.title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
           ),
         ),
-        _buildPriorityBadge(),
-        if (task.hasDelayRisk) _buildRiskIndicator(),
+        const SizedBox(width: 8),
+        _buildPriorityBadge(context),
+        if (task.hasDelayRisk) _buildRiskIndicator(context),
       ],
     );
   }
 
-  Widget _buildPriorityBadge() {
+  Widget _buildPriorityBadge(BuildContext context) {
     Color color;
     switch (task.priority) {
       case Priority.high:
-        color = Colors.red;
+        color = AppTheme.priorityHigh;
         break;
       case Priority.medium:
-        color = Colors.orange;
+        color = AppTheme.priorityMedium;
         break;
       case Priority.low:
-        color = Colors.green;
+        color = AppTheme.priorityLow;
         break;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withOpacity(0.8), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 8,
+            spreadRadius: 1,
+          ),
+        ],
       ),
       child: Text(
-        task.priority.label,
+        task.priority.label.toUpperCase(),
         style: TextStyle(
           color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
         ),
       ),
     );
   }
 
-  Widget _buildRiskIndicator() {
-    return const Padding(
-      padding: EdgeInsets.only(left: 8),
+  Widget _buildRiskIndicator(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
       child: Tooltip(
         message: 'Gecikme Riski!',
-        child: Icon(Icons.warning_amber_rounded, color: Colors.red, size: 24),
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.red.withOpacity(0.1),
+            border: Border.all(color: Colors.red.withOpacity(0.5)),
+          ),
+          child: const Icon(Icons.warning, color: Colors.red, size: 16),
+        ),
       ),
     );
   }
 
-  Widget _buildFooter() {
+  Widget _buildFooter(BuildContext context) {
     final dateFormat = DateFormat('dd MMM yyyy', 'tr_TR');
+    final isOverdue = task.isOverdue;
     
     return Row(
       children: [
-        _buildStatusChip(),
+        _buildStatusChip(context),
         const Spacer(),
-        Icon(
-          Icons.calendar_today,
-          size: 16,
-          color: task.isOverdue ? Colors.red : Colors.grey,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          dateFormat.format(task.dueDate),
-          style: TextStyle(
-            color: task.isOverdue ? Colors.red : Colors.grey[600],
-            fontWeight: task.isOverdue ? FontWeight.bold : FontWeight.normal,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: isOverdue 
+                ? Colors.red.withOpacity(0.1) 
+                : Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(20),
+            border: isOverdue 
+                ? Border.all(color: Colors.red.withOpacity(0.3))
+                : null,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.calendar_today_outlined,
+                size: 14,
+                color: isOverdue ? Colors.red : Colors.grey[400],
+              ),
+              const SizedBox(width: 6),
+              Text(
+                dateFormat.format(task.dueDate),
+                style: TextStyle(
+                  color: isOverdue ? Colors.red : Colors.grey[300],
+                  fontWeight: isOverdue ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
         ),
         if (onDelete != null) ...[
-          const SizedBox(width: 16),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.grey),
-            onPressed: onDelete,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+          const SizedBox(width: 8),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onDelete,
+              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Icon(Icons.delete_outline, color: Colors.grey[500], size: 20),
+              ),
+            ),
           ),
         ],
       ],
     );
   }
 
-  Widget _buildStatusChip() {
-    Color bgColor;
-    Color textColor;
+  Widget _buildStatusChip(BuildContext context) {
+    Color color;
+    IconData icon;
     
     switch (task.status) {
       case TaskStatus.completed:
-        bgColor = Colors.green.withOpacity(0.1);
-        textColor = Colors.green;
+        color = AppTheme.priorityLow; // Green
+        icon = Icons.check_circle_outline;
         break;
       case TaskStatus.inProgress:
-        bgColor = Colors.blue.withOpacity(0.1);
-        textColor = Colors.blue;
+        color = Colors.blueAccent;
+        icon = Icons.timelapse;
         break;
       case TaskStatus.pending:
-        bgColor = Colors.grey.withOpacity(0.1);
-        textColor = Colors.grey;
+        color = Colors.grey;
+        icon = Icons.pending_outlined;
         break;
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        task.status.label,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 6),
+        Text(
+          task.status.label,
+          style: TextStyle(
+            color: color,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildDependencyWarning() {
+  Widget _buildDependencyWarning(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.all(8),
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.1),
+        color: Colors.orange.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.amber),
+        border: Border.all(color: Colors.orange.withOpacity(0.5)),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.lock, color: Colors.amber, size: 16),
-          SizedBox(width: 8),
+          const Icon(Icons.lock_outline, color: Colors.orange, size: 16),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               'Öncül görev tamamlanmadan başlatılamaz',
-              style: TextStyle(color: Colors.amber, fontSize: 12),
+              style: TextStyle(
+                color: Colors.orange[300], 
+                fontSize: 12,
+                fontWeight: FontWeight.w500
+              ),
             ),
           ),
         ],
